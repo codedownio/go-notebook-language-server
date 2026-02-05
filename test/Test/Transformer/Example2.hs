@@ -13,14 +13,18 @@ import TestLib.Common
 
 
 testCode :: T.Text
-testCode = [__i|import "fmt"
-import "strings"|]
+testCode = [__i|
+  import "fmt"
+  import "strings"
+  |]
 
 expectedFinalOutput :: T.Text
-expectedFinalOutput = [__i|package main
+expectedFinalOutput = [__i|
+  package main
 
-import "fmt"
-import "strings"|]
+  import "fmt"
+  import "strings"
+  |]
 
 txParams :: DeclarationSifterParams
 txParams = DeclarationSifterParams "go-parser" "_notebookExec" ["package main", ""]
