@@ -120,6 +120,14 @@ test-suite go-notebook-language-server-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.Transformer.Example1
+      Test.Transformer.Example2
+      Test.Transformer.Example3
+      Test.Transformer.Example4
+      TestLib.Common
+      TestLib.Core
+      TestLib.Generators
+      TestLib.Util
       Paths_go_notebook_language_server
   hs-source-dirs:
       test
