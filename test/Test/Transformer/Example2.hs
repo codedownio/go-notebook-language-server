@@ -12,18 +12,10 @@ import Test.Sandwich
 import TestLib.Common
 
 
--- | Input: just imports
--- Line 0: import "fmt"
--- Line 1: import "strings"
 testCode :: T.Text
 testCode = [__i|import "fmt"
 import "strings"|]
 
--- | Output: package header + imports (no wrapper needed since no statements)
--- Line 0: package main
--- Line 1: (empty header)
--- Line 2: import "fmt"
--- Line 3: import "strings"
 expectedFinalOutput :: T.Text
 expectedFinalOutput = [__i|package main
 
@@ -44,13 +36,11 @@ spec = describe "Example2 (only imports)" $ do
     it "transforms first import" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      -- import at (0, 7) -> (2, 7) - "fmt" position
       transformAndUntransform txParams (Position 0 7) (Position 2 7) sifter
 
     it "transforms second import" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      -- import at (1, 0) -> (3, 0)
       transformAndUntransform txParams (Position 1 0) (Position 3 0) sifter
 
 main :: IO ()
