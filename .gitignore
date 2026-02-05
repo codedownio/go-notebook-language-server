@@ -1,0 +1,6 @@
+.stack-work/
+*~
+test_runs/
+result
+.direnv
+go-parser/go-parser
