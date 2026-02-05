@@ -13,31 +13,33 @@ import TestLib.Common
 
 
 testCode :: T.Text
-testCode = [__i|import "fmt"
+testCode = [__i|
+  import "fmt"
 
-type Point struct {
-    X, Y int
-}
+  type Point struct {
+      X, Y int
+  }
 
-var globalCounter = 0
+  var globalCounter = 0
 
-const MaxSize = 100
+  const MaxSize = 100
 
-func Add(a, b int) int {
-    return a + b
-}|]
+  func Add(a, b int) int {
+      return a + b
+  }
+  |]
 
 expectedFinalOutput :: T.Text
 expectedFinalOutput = [i|package main
 
 import "fmt"
 type Point struct {
-X, Y int
+    X, Y int
 }
 var globalCounter = 0
 const MaxSize = 100
 func Add(a, b int) int {
-return a + b
+    return a + b
 }
 
 

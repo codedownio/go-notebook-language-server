@@ -13,30 +13,34 @@ import TestLib.Common
 
 
 testCode :: T.Text
-testCode = [__i|import "fmt"
+testCode = [__i|
+  import "fmt"
 
-func hello() {
-    fmt.Println("hello")
-}
-
-fmt.Println("top level statement")
-x := 42
-fmt.Println(x)|]
-
-expectedFinalOutput :: T.Text
-expectedFinalOutput = [i|package main
-
-import "fmt"
-func hello() {
-fmt.Println("hello")
-}
-func _notebookExec() {
-
+  func hello() {
+      fmt.Println("hello")
+  }
 
   fmt.Println("top level statement")
   x := 42
   fmt.Println(x)
-}|]
+  |]
+
+expectedFinalOutput :: T.Text
+expectedFinalOutput = [__i|
+  package main
+
+  import "fmt"
+  func hello() {
+      fmt.Println("hello")
+  }
+  func _notebookExec() {
+
+
+    fmt.Println("top level statement")
+    x := 42
+    fmt.Println(x)
+  }
+  |]
 
 txParams :: DeclarationSifterParams
 txParams = DeclarationSifterParams "go-parser" "_notebookExec" ["package main", ""]
