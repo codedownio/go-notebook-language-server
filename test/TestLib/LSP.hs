@@ -73,20 +73,21 @@ doSession fileName codeToUse cb = do
   goNotebookLSPath <- askFile @"go-notebook-language-server"
   goplsPath <- askFile @"gopls"
 
-  withSystemTempDirectory "go-lsp-test" $ \tmpDir -> do
+  Just dir <- getCurrentFolder
+  withTempDirectory dir "go-lsp-test" $ \tmpDir -> do
     let testFile = tmpDir </> fileName
 
     -- Write the notebook code
     liftIO $ TIO.writeFile testFile codeToUse
 
     -- Create go.mod for gopls
-    let goModPath = tmpDir </> "go.mod"
-    let goModContent = T.pack $ Prelude.unlines [
-          "module testmodule",
-          "",
-          "go 1.21"
-          ]
-    liftIO $ TIO.writeFile goModPath goModContent
+    -- let goModPath = tmpDir </> "go.mod"
+    -- let goModContent = T.pack $ Prelude.unlines [
+    --       "module testmodule",
+    --       "",
+    --       "go 1.21"
+    --       ]
+    -- liftIO $ TIO.writeFile goModPath goModContent
 
     let lspConfig = Helpers.LanguageServerConfig {
           lspConfigName = "go-notebook-language-server"
@@ -119,7 +120,7 @@ doSession fileName codeToUse cb = do
           Helpers.lspSessionOptionsInitialFileName = fileName
           , Helpers.lspSessionOptionsInitialLanguageKind = LanguageKind_Go
           , Helpers.lspSessionOptionsInitialCode = codeToUse
-          , Helpers.lspSessionOptionsExtraFiles = [("go.mod", TE.encodeUtf8 goModContent)]
+          , Helpers.lspSessionOptionsExtraFiles = [] -- [("go.mod", TE.encodeUtf8 goModContent)]
           , Helpers.lspSessionOptionsPathEnvVar = pathToUse
           , Helpers.lspSessionOptionsReadOnlyBinds = closure
           , Helpers.lspSessionOptionsModifySessionConfig = \x -> x { LSP.messageTimeout = 10 }
