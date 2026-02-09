@@ -32,7 +32,6 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.Exception
 import UnliftIO.Process
-import UnliftIO.Temporary (withSystemTempDirectory)
 
 import Transform.ClientNot
 import Transform.ClientReq
@@ -51,7 +50,6 @@ import Streams
 data Options = Options {
   optWrappedLanguageServer :: Maybe FilePath
   , optWrappedArgs :: Maybe Text
-  , optShadowDirTemplate :: Maybe FilePath
   , optDidSaveDebouncePeriodMs :: Int
   , optLogLevel :: Maybe Text
   }
@@ -60,7 +58,6 @@ options :: Parser Options
 options = Options
   <$> optional (strOption (long "wrapped-server" <> help "Wrapped gopls binary"))
   <*> optional (strOption (long "wrapped-args" <> help "Extra arguments to gopls"))
-  <*> optional (strOption (long "shadow-dir-template" <> help "Template for making a shadow project directory"))
   <*> option auto (long "did-save-period-ms" <> showDefault <> help "Debounce period for sending textDocument/didSave notifications after changes" <> value 1000 <> metavar "INT")
   <*> optional (strOption (long "log-level" <> help "Log level (debug, info, warn, error)"))
 
@@ -133,26 +130,15 @@ main = do
         , _message = T.decodeUtf8 $ fromLogStr msg
         }
 
-  withMaybeShadowDir optShadowDirTemplate $ \maybeShadowDir -> do
-    transformerState <- newTransformerState maybeShadowDir optDidSaveDebouncePeriodMs
+  transformerState <- newTransformerState optDidSaveDebouncePeriodMs
 
-    flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
-      withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
-        withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
-          withAsync (forever $ handleStdin wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
-            waitForProcess p >>= \case
-              ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
-              ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
-
-
-withMaybeShadowDir :: MonadUnliftIO m => Maybe FilePath -> (FilePath -> m a) -> m a
-withMaybeShadowDir maybeTemplate cb = withSystemTempDirectory "gopls-shadow-home" $ \dir -> do
-  case maybeTemplate of
-    Just template -> do
-      void $ readCreateProcess ((proc "cp" ["-r", "./.", dir]) { cwd = Just template }) ""
-      void $ readCreateProcess (proc "chmod" ["-R", "u+w", dir]) ""
-    Nothing -> return ()
-  cb dir
+  flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
+    withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
+      withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
+        withAsync (forever $ handleStdin wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
+          waitForProcess p >>= \case
+            ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
+            ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
 
 handleStdin :: forall m. (
   MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m

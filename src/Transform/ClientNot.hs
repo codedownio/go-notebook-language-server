@@ -61,19 +61,15 @@ transformClientNot' sendExtraNotification SMethod_TextDocumentDidOpen params = w
   let ls = Rope.fromText t
   let txParams = if isNotebook u then transformerParams else idTransformerParams
   (ls', transformer' :: GoNotebookTransformer, _eitherErr) <- liftIO $ project txParams ls
+
+  logDebugN [i|(#{u}) Transforming TextDocumentDidOpen. Is notebook? #{isNotebook u}|]
+
   TransformerState {..} <- ask
-  (newPath, referenceRegex) <- do
-    identifier <- makeUUID' 15
-    let path = transformerShadowDir </> identifier <.> "go"
+  newUri <- if isNotebook u then addExtensionToUri ".go" u else return u
 
-    newPath <- do
-      createDirectoryIfMissing True (takeDirectory path)
-      liftIO $ T.writeFile path (Rope.toText ls')
-      return path
-
-    pure (newPath, mkDocRegex (T.pack (identifier <.> "go")))
-
-  let newUri = filePathToUri newPath
+  newPath <- case uriToFilePath newUri of
+    Nothing -> Prelude.error [i|Failed to convert new URI to file path: #{newUri}|]
+    Just x -> pure x
 
   uuid <- liftIO UUID.nextRandom
 
@@ -98,7 +94,9 @@ transformClientNot' sendExtraNotification SMethod_TextDocumentDidOpen params = w
         , origUri = u
         , newUri = newUri
         , newPath = newPath
-        , referenceRegex = referenceRegex
+        , referenceRegex = case uriToFilePath newUri of
+            Just s -> mkDocRegex (T.pack s)
+            Nothing -> mkDocRegex (getUri newUri)
         , documentUuid = uuid
         , debouncedDidChange = debouncedDidChange
         }) x

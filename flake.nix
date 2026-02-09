@@ -78,6 +78,12 @@
             static = flakeStatic.packages."go-notebook-language-server:exe:go-notebook-language-server";
             dynamic = flake.packages."go-notebook-language-server:exe:go-notebook-language-server";
 
+            # Print a trivial PATH that we can use to run kernel and LSP tests, to ensure
+            # they aren't depending on anything on the test machine's PATH.
+            print-basic-path = pkgs.writeShellScriptBin "basic-path.sh" ''
+              echo ${pkgs.lib.makeBinPath (with pkgs; [coreutils go])}
+            '';
+
             nixpkgsPath = pkgs.writeShellScriptBin "nixpkgsPath.sh" "echo -n ${pkgs.path}";
           });
 

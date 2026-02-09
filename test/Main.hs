@@ -1,11 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
+import TestLib.LSP
 
 import qualified Test.Transformer.Example1
 import qualified Test.Transformer.Example2
 import qualified Test.Transformer.Example3
 import qualified Test.Transformer.Example4
+
+import qualified Test.Completions
+import qualified Test.Diagnostics
+import qualified Test.Hover
 
 
 spec :: TopSpec
@@ -15,15 +22,14 @@ spec = do
   Test.Transformer.Example3.spec
   Test.Transformer.Example4.spec
 
-  -- TODO: Integration tests with gopls
-  -- describe "Integration tests" $
-  --   introduceMaybeBubblewrap $
-  --   introduceNixContext nixpkgsReleaseDefault $
-  --   introduceBinaryViaNixPackage @"gopls" "gopls" $
-  --   introduceGnls $ do
-  --     Test.Completions.spec
-  --     Test.Diagnostics.spec
-  --     Test.Hover.spec
+  describe "Integration tests" $
+    introduceMaybeBubblewrap $
+    introduceNixContext nixpkgsReleaseDefault $
+    introduceBinaryViaNixPackage @"gopls" "gopls" $
+    introduceGnls $ do
+      Test.Completions.spec
+      Test.Diagnostics.spec
+      Test.Hover.spec
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec
