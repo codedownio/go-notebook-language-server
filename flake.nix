@@ -67,6 +67,7 @@
             default = pkgs.mkShell {
               NIX_PATH = "nixpkgs=${pkgs.path}";
               buildInputs = with pkgs; [
+                stack
                 haskell.compiler.ghc9122
 
                 pcre
@@ -121,6 +122,14 @@
             };
 
             nixpkgsPath = pkgs.writeShellScriptBin "nixpkgsPath.sh" "echo -n ${pkgs.path}";
+
+            # No GMP (we test the dynamic builds to make sure GMP doesn't end up in the static builds)
+            verify-no-gmp = pkgs.writeShellScriptBin "verify-no-gmp.sh" ''
+              echo "Checking for libgmp in ${dynamic}/bin/go-notebook-language-server"
+              (echo "$(ldd ${dynamic}/bin/go-notebook-language-server)" | grep libgmp) && exit 1
+
+              exit 0
+            '';
           });
 
           inherit flake;
