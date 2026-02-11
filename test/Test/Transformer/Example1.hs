@@ -46,7 +46,7 @@ txParams :: DeclarationSifterParams
 txParams = DeclarationSifterParams "go-parser" "_notebookExec" ["package main", ""]
 
 spec :: TopSpec
-spec = describe "Example1 (mixed: import + func + statements)" $ do
+spec = describe "Example1 (mixed import + func + statements)" $ do
   it "produces expected output" $ do
     let inputDoc = listToDoc (T.splitOn "\n" testCode)
     (outputDoc, _ :: DeclarationSifter, _) <- project txParams inputDoc
