@@ -134,8 +134,11 @@ main = do
   transformerState <- newTransformerState optDidSaveDebouncePeriodMs
 
   flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
+    flip finally (logDebugN [i|Tore down loop to read from wrapped stdout|]) $
     withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
+    flip finally (logDebugN [i|Tore down loop to read from wrapped stderr|]) $
     withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
+    flip finally (logDebugN [i|Tore down loop to read from stdin|]) $
     withAsync (stdinLoop wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
     waitForProcess p >>= \case
       ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
