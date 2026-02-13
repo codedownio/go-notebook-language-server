@@ -135,11 +135,11 @@ main = do
 
   flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
     withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
-      withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
-        withAsync (stdinLoop wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
-          waitForProcess p >>= \case
-            ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
-            ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
+    withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
+    withAsync (stdinLoop wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
+    waitForProcess p >>= \case
+      ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
+      ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
 
 stdinLoop :: forall m. (
   MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m
@@ -147,7 +147,7 @@ stdinLoop :: forall m. (
 stdinLoop wrappedIn clientReqMap serverReqMap = go freshParse
   where
     go parserState = do
-      (result, nextState) <- parseOne "stdinLoop" stdin parserState
+      (result, nextState) <- parseOne stdin parserState
       case result of
         ParseEOF -> logInfoN "stdin closed"
         ParseFail ctxs err -> do
@@ -187,16 +187,13 @@ handleStdinMessage wrappedIn clientReqMap serverReqMap msg = do
 
 readWrappedOut :: (
   MonadUnliftIO m, MonadLoggerIO m, MonadReader TransformerState m, MonadFail m
-  ) => MVar ClientRequestMap -> MVar ServerRequestMap -> Handle -> (forall a. ToJSON a => a -> m ()) -> m b
+  ) => MVar ClientRequestMap -> MVar ServerRequestMap -> Handle -> (forall a. ToJSON a => a -> m ()) -> m ()
 readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = go (freshParse)
   where
     go parserState = do
-      (result, nextState) <- parseOne "readWrappedOut" wrappedOut parserState
+      (result, nextState) <- parseOne wrappedOut parserState
       case result of
-        ParseEOF -> do
-          logInfoN "wrapped stdout closed"
-          -- Return type is 'b' so we need to loop forever or throw
-          go nextState
+        ParseEOF -> logInfoN "wrapped stdout closed"
         ParseFail ctxs err -> do
           logErr [i|Failed to parse wrapped output header: #{ctxs}: #{err}|]
           go nextState

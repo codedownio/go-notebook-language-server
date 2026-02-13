@@ -12,7 +12,6 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Aeson as A
 import Data.String.Interpolate
-import qualified Data.Text as T
 import Data.Time
 import Language.LSP.Protocol.Lens as Lens
 import Language.LSP.Protocol.Message

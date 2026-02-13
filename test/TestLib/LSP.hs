@@ -44,7 +44,6 @@ import UnliftIO.Process
 import qualified "lsp-test" Language.LSP.Test as LSP hiding (message)
 import qualified Data.Set as S
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
 import qualified Language.LSP.Test.Helpers as Helpers
 import qualified System.Directory as Dir

@@ -1,5 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
-
 module Streams (
   parseOne
   , ParseResult(..)
@@ -13,9 +11,7 @@ import qualified Data.Attoparsec.ByteString as Attoparsec
 import Data.Attoparsec.ByteString.Char8 (decimal, string, skipWhile)
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder.Extra (defaultChunkSize)
-import Data.String.Interpolate
-import Data.Text
-import System.IO
+import System.IO (Handle)
 
 
 data ParseResult
@@ -26,24 +22,16 @@ data ParseResult
 
 -- | Parse one LSP message from the handle using Attoparsec's incremental parsing.
 -- Returns the message bytes and any remainder, or an error.
-parseOne :: MonadIO m => Text -> Handle -> Result BS.ByteString -> m (ParseResult, Result BS.ByteString)
-parseOne src h = go
+parseOne :: MonadIO m => Handle -> Result BS.ByteString -> m (ParseResult, Result BS.ByteString)
+parseOne h = go
   where
-    go (Fail bytes ctxs err) = do
-      liftIO $ hPutStrLn stderr [i|[Streams, #{src}] parseOne: Fail #{bytes} #{ctxs} #{err}|]
-      pure (ParseFail ctxs err, parse parseHeaders "")
+    go (Fail _bytes ctxs err) = pure (ParseFail ctxs err, parse parseHeaders "")
     go (Partial c) = do
-      liftIO $ hPutStrLn stderr [i|[Streams, #{src}] parseOne: Partial, about to hGetSome (blocking)...|]
       bs <- liftIO $ BS.hGetSome h defaultChunkSize
-      liftIO $ hPutStrLn stderr [i|[Streams, #{src}] parseOne: hGetSome returned #{BS.length bs} bytes: |START|#{bs}|END||]
       if BS.null bs
-        then do
-          liftIO $ hPutStrLn stderr [i|[Streams, #{src}] parseOne: got empty ByteString, returning ParseEOF|]
-          pure (ParseEOF, parse parseHeaders "")
+        then pure (ParseEOF, parse parseHeaders "")
         else go (c bs)
-    go (Done remainder msg) = do
-      liftIO $ hPutStrLn stderr [i|[Streams, #{src}] parseOne: Done, msg=#{BS.length msg} bytes, remainder=#{BS.length remainder} bytes|]
-      pure (ParseSuccess msg remainder, parse parseHeaders remainder)
+    go (Done remainder msg) = pure (ParseSuccess msg remainder, parse parseHeaders remainder)
 
 -- | Parse Content-Length and Content-Type headers, then consume the message body.
 -- Copied from Language.LSP.Server.Control since it's a hidden module.
