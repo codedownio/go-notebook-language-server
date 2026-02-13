@@ -14,6 +14,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Aeson as A hiding (Options)
 import qualified Data.Aeson.Types as A
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.String.Interpolate
@@ -135,16 +136,32 @@ main = do
   flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
     withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
       withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
-        withAsync (forever $ handleStdin wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
+        withAsync (stdinLoop wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
           waitForProcess p >>= \case
             ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
             ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
 
-handleStdin :: forall m. (
+stdinLoop :: forall m. (
   MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m
   ) => Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> m ()
-handleStdin wrappedIn clientReqMap serverReqMap = do
-  (A.eitherDecode <$> liftIO (parseStream stdin)) >>= \case
+stdinLoop wrappedIn clientReqMap serverReqMap = go freshParse
+  where
+    go parserState = do
+      (result, nextState) <- parseOne "stdinLoop" stdin parserState
+      case result of
+        ParseEOF -> logInfoN "stdin closed"
+        ParseFail ctxs err -> do
+          logErr [i|Failed to parse message header: #{ctxs}: #{err}|]
+          go nextState
+        ParseSuccess msg _remainder -> do
+          handleStdinMessage wrappedIn clientReqMap serverReqMap msg
+          go nextState
+
+handleStdinMessage :: forall m. (
+  MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m
+  ) => Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> BS.ByteString -> m ()
+handleStdinMessage wrappedIn clientReqMap serverReqMap msg = do
+  case A.eitherDecode (BL.fromStrict msg) of
     Left err -> logErr [i|Couldn't decode incoming message: #{err}|]
     Right (x :: A.Value) -> do
       m <- readMVar serverReqMap
@@ -152,27 +169,46 @@ handleStdin wrappedIn clientReqMap serverReqMap = do
         Left err -> do
           logErr [i|Couldn't decode incoming message: #{err}|]
           liftIO $ writeToHandle wrappedIn (A.encode x)
-        Right (ClientToServerRsp meth msg) -> do
-          transformClientRsp meth msg >>= liftIO . writeToHandle wrappedIn . A.encode
-        Right (ClientToServerReq meth msg) -> do
-          let msgId = msg ^. Lens.id
-          modifyMVar_ clientReqMap $ \m -> case updateClientRequestMap m msgId (SMethodAndParams meth (msg ^. Lens.params)) of
-            Just m' -> return m'
-            Nothing -> return m
-          transformClientReq meth msg >>= liftIO . writeToHandle wrappedIn . A.encode
-        Right (ClientToServerNot meth msg) ->
-          transformClientNot sendExtraNotification meth msg >>= (liftIO . writeToHandle wrappedIn . A.encode)
+        Right (ClientToServerRsp meth msg') -> do
+          transformClientRsp meth msg' >>= liftIO . writeToHandle wrappedIn . A.encode
+        Right (ClientToServerReq meth msg') -> do
+          let msgId = msg' ^. Lens.id
+          modifyMVar_ clientReqMap $ \m' -> case updateClientRequestMap m' msgId (SMethodAndParams meth (msg' ^. Lens.params)) of
+            Just m'' -> return m''
+            Nothing -> return m'
+          transformClientReq meth msg' >>= liftIO . writeToHandle wrappedIn . A.encode
+        Right (ClientToServerNot meth msg') ->
+          transformClientNot sendExtraNotification meth msg' >>= (liftIO . writeToHandle wrappedIn . A.encode)
   where
     sendExtraNotification :: SendExtraNotificationFn m
-    sendExtraNotification msg = do
-      logDebugN [i|Sending extra notification: #{A.encode msg}|]
-      liftIO $ writeToHandle wrappedIn $ A.encode msg
+    sendExtraNotification msg' = do
+      logDebugN [i|Sending extra notification: #{A.encode msg'}|]
+      liftIO $ writeToHandle wrappedIn $ A.encode msg'
 
 readWrappedOut :: (
   MonadUnliftIO m, MonadLoggerIO m, MonadReader TransformerState m, MonadFail m
   ) => MVar ClientRequestMap -> MVar ServerRequestMap -> Handle -> (forall a. ToJSON a => a -> m ()) -> m b
-readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = forever $ do
-  (A.eitherDecode <$> liftIO (parseStream wrappedOut)) >>= \case
+readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = go (freshParse)
+  where
+    go parserState = do
+      (result, nextState) <- parseOne "readWrappedOut" wrappedOut parserState
+      case result of
+        ParseEOF -> do
+          logInfoN "wrapped stdout closed"
+          -- Return type is 'b' so we need to loop forever or throw
+          go nextState
+        ParseFail ctxs err -> do
+          logErr [i|Failed to parse wrapped output header: #{ctxs}: #{err}|]
+          go nextState
+        ParseSuccess msg _remainder -> do
+          handleWrappedOutMessage clientReqMap serverReqMap sendToStdout msg
+          go nextState
+
+handleWrappedOutMessage :: (
+  MonadUnliftIO m, MonadLoggerIO m, MonadReader TransformerState m, MonadFail m
+  ) => MVar ClientRequestMap -> MVar ServerRequestMap -> (forall a. ToJSON a => a -> m ()) -> BS.ByteString -> m ()
+handleWrappedOutMessage clientReqMap serverReqMap sendToStdout msg = do
+  case A.eitherDecode (BL.fromStrict msg) of
     Left err -> logErr [i|Couldn't decode wrapped output: #{err}|]
     Right (x :: A.Value) -> do
       m <- readMVar clientReqMap
@@ -180,16 +216,16 @@ readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = forever $ do
         Left err -> do
           logErr [i|Couldn't decode server message: #{A.encode x} (#{err})|]
           sendToStdout x
-        Right (ServerToClientNot meth msg) ->
-          transformServerNot meth msg >>= sendToStdout
-        Right (ServerToClientReq meth msg) -> do
-          let msgId = msg ^. Lens.id
-          modifyMVar_ serverReqMap $ \m -> case updateServerRequestMap m msgId (SMethodAndParams meth (msg ^. Lens.params)) of
-            Just m' -> return m'
-            Nothing -> return m
-          sendToStdout (transformServerReq meth msg)
-        Right (ServerToClientRsp meth initialParams msg) ->
-          transformServerRsp meth initialParams msg >>= sendToStdout
+        Right (ServerToClientNot meth msg') ->
+          transformServerNot meth msg' >>= sendToStdout
+        Right (ServerToClientReq meth msg') -> do
+          let msgId = msg' ^. Lens.id
+          modifyMVar_ serverReqMap $ \m' -> case updateServerRequestMap m' msgId (SMethodAndParams meth (msg' ^. Lens.params)) of
+            Just m'' -> return m''
+            Nothing -> return m'
+          sendToStdout (transformServerReq meth msg')
+        Right (ServerToClientRsp meth initialParams msg') ->
+          transformServerRsp meth initialParams msg' >>= sendToStdout
 
 readWrappedErr :: MonadLoggerIO m => Handle -> m ()
 readWrappedErr wrappedErr = forever $ do

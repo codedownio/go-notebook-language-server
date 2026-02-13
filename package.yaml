@@ -64,6 +64,7 @@ executables:
     - -W
     dependencies:
     - aeson
+    - attoparsec
     - bytestring
     - lens
     - mtl
@@ -71,7 +72,6 @@ executables:
     - process
     - retry
     - go-notebook-language-server
-    - safe
     - unix
     - unliftio-core
 

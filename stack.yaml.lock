@@ -44,7 +44,7 @@ packages:
     git: https://github.com/codedownio/sandwich
     subdir: sandwich-quickcheck
 - completed:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     name: lsp
     pantry-tree:
@@ -53,24 +53,24 @@ packages:
     subdir: lsp
     version: 2.7.0.1
   original:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     subdir: lsp
 - completed:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     name: lsp-test
     pantry-tree:
-      sha256: 3671570067b55febf7903af85164d35aa515851318e69b31f048998e64362c6a
+      sha256: 46f37966ca753a019a6427850e0b16dc7db1e01068f31d0ae0871d038128a605
       size: 2304
     subdir: lsp-test
     version: 0.17.1.1
   original:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     subdir: lsp-test
 - completed:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     name: lsp-types
     pantry-tree:
@@ -79,19 +79,19 @@ packages:
     subdir: lsp-types
     version: 2.3.0.1
   original:
-    commit: d920b28aa25d454812d8d9bbd922e893574d45bc
+    commit: c723f4a4fb99661c76b1356f8a839a0e266b0f32
     git: https://github.com/codedownio/lsp.git
     subdir: lsp-types
 - completed:
-    commit: 98ed0dde02e9e784b4ab73f2d5330ee0a9a0b1e4
+    commit: 3aead859c272db11879cec58bef0f4e65244be45
     git: https://github.com/codedownio/lsp-test-helpers.git
     name: lsp-test-helpers
     pantry-tree:
-      sha256: 934f07f5b3f69db717aa291cdc789059ad885aee8a3dac03d5b6b13cdfcb202f
+      sha256: e54dd03d9c54245b2996523858d8812206eef6e3a3f90fb3d1820a789590e421
       size: 1025
     version: 0.1.0.0
   original:
-    commit: 98ed0dde02e9e784b4ab73f2d5330ee0a9a0b1e4
+    commit: 3aead859c272db11879cec58bef0f4e65244be45
     git: https://github.com/codedownio/lsp-test-helpers.git
 snapshots:
 - completed:

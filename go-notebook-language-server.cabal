@@ -98,6 +98,7 @@ executable go-notebook-language-server
   ghc-options: -Wunused-packages -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N -O2 -W
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
     , bytestring
     , go-notebook-language-server
@@ -108,7 +109,6 @@ executable go-notebook-language-server
     , optparse-applicative
     , process
     , retry
-    , safe
     , string-interpolate
     , text
     , unix
