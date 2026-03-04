@@ -93,16 +93,10 @@
             darwin = flakeDarwin.packages."go-notebook-language-server:exe:go-notebook-language-server";
             aarch64Linux = let
               executable = flakeAarch64Linux.packages."go-notebook-language-server:exe:go-notebook-language-server";
-              libs = pkgs.callPackage ./nix/dynamic-aarch64-closure.nix {
-                inherit executable;
-                executableName = "go-notebook-language-server";
-                pkgsCross = pkgs.pkgsCross.aarch64-multiplatform;
-              };
-            in pkgs.runCommand "go-notebook-language-server-aarch64-dynamic" { passthru = { inherit (executable) version; }; } ''
-                 mkdir -p $out/bin
-                 cp -r ${executable}/bin/* $out/bin
-                 cp -r ${libs}/lib/* $out/bin
-               '';
+            in pkgs.callPackage ./nix/package-bundled.nix {
+              binaryDrv = executable;
+              binaryName = "go-notebook-language-server";
+            };
             staticAarch64Linux = flakeStaticAarch64Linux.packages."go-notebook-language-server:exe:go-notebook-language-server";
 
             # Print a trivial PATH that we can use to run kernel and LSP tests, to ensure
