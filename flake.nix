@@ -6,8 +6,9 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
+  inputs.linux-dynamic-bundler.url = "github:codedownio/linux-dynamic-bundler";
 
-  outputs = { self, flake-utils, gitignore, haskellNix, nixpkgs }:
+  outputs = { self, flake-utils, gitignore, haskellNix, nixpkgs, linux-dynamic-bundler }:
     flake-utils.lib.eachSystem ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"] (system:
       let
         compiler-nix-name = "ghc9122";
@@ -52,11 +53,11 @@
             --prefix PATH : ${go-parser}/bin
         '';
 
-        packageForGitHub' = systemToUse: cnls: pkgs.runCommand "go-notebook-language-server-${cnls.version}-${systemToUse}" {} ''
-          name="go-notebook-language-server-${cnls.version}-${systemToUse}"
+        packageForGitHub' = systemToUse: gnls: pkgs.runCommand "go-notebook-language-server-${gnls.version}-${systemToUse}" {} ''
+          name="go-notebook-language-server-${gnls.version}-${systemToUse}"
 
           mkdir -p to_zip
-          cp -r ${cnls}/* to_zip
+          cp -r ${gnls}/* to_zip
           mkdir -p $out
           tar -czvf $out/$name.tar.gz -C to_zip .
         '';
@@ -93,7 +94,8 @@
             darwin = flakeDarwin.packages."go-notebook-language-server:exe:go-notebook-language-server";
             aarch64Linux = let
               executable = flakeAarch64Linux.packages."go-notebook-language-server:exe:go-notebook-language-server";
-            in pkgs.callPackage ./nix/package-bundled.nix {
+            in linux-dynamic-bundler.lib.bundle {
+              inherit pkgs;
               binaryDrv = executable;
               binaryName = "go-notebook-language-server";
             };
