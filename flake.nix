@@ -1,16 +1,16 @@
 {
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/9c5956641f45b6b02607e318485aad01c18e65b0";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/master";
   inputs.gitignore = {
     url = "github:hercules-ci/gitignore.nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
 
   outputs = { self, flake-utils, gitignore, haskellNix, nixpkgs }:
     flake-utils.lib.eachSystem ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"] (system:
       let
-        compiler-nix-name = "ghc9122";
+        compiler-nix-name = "ghc9124";
 
         overlays = [
           haskellNix.overlay
@@ -68,7 +68,7 @@
               NIX_PATH = "nixpkgs=${pkgs.path}";
               buildInputs = with pkgs; [
                 stack
-                haskell.compiler.ghc9122
+                haskell.compiler.ghc9124
 
                 pcre
                 zlib

@@ -14,6 +14,7 @@ final: prev: {
         packages.unix.components.library.configureFlags = [''-f os-string''];
         packages.directory.components.library.configureFlags = [''-f os-string''];
         packages.file-io.components.library.configureFlags = [''-f os-string''];
+        packages.process.components.library.configureFlags = [''-f os-string''];
 
         packages.go-notebook-language-server.components.exes.go-notebook-language-server.dontStrip = false;
       }]
