@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           go-notebook-language-server
-version:        0.1.0.3
+version:        0.1.0.4
 build-type:     Simple
 
 library
