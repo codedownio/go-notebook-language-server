@@ -59,6 +59,7 @@ transformClientReq' SMethod_TextDocumentDocumentHighlight params = whenAnything 
 transformClientReq' SMethod_TextDocumentDocumentSymbol params = whenAnything params $ withTransformer params $ doTransformUri @m params
 transformClientReq' SMethod_TextDocumentHover params = whenAnything params $ withTransformer params $ doTransformUriAndPosition @m params
 transformClientReq' SMethod_TextDocumentImplementation params = whenAnything params $ withTransformer params $ doTransformUriAndPosition @m params
+transformClientReq' SMethod_TextDocumentInlayHint params = whenAnything params $ withTransformer params $ doTransformUriAndRange @m params
 transformClientReq' SMethod_TextDocumentTypeDefinition params = whenAnything params $ withTransformer params $ doTransformUriAndPosition @m params
 
 transformClientReq' _ params = return params
