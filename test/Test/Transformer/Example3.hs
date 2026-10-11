@@ -40,17 +40,17 @@ spec = describe "Example3 (only statements)" $ do
     it "transforms first statement" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 0 0) (Position 3 2) sifter
+      transformAndUntransform (Position 0 0) (Position 3 2) sifter
 
     it "transforms middle of statement" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 1 5) (Position 4 7) sifter
+      transformAndUntransform (Position 1 5) (Position 4 7) sifter
 
     it "transforms last statement" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 2 0) (Position 5 2) sifter
+      transformAndUntransform (Position 2 0) (Position 5 2) sifter
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec
