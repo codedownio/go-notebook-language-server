@@ -40,12 +40,12 @@ spec = describe "Example2 (only imports)" $ do
     it "transforms first import" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 0 7) (Position 2 7) sifter
+      transformAndUntransform (Position 0 7) (Position 2 7) sifter
 
     it "transforms second import" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 1 0) (Position 3 0) sifter
+      transformAndUntransform (Position 1 0) (Position 3 0) sifter
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec

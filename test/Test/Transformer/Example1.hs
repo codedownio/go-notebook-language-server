@@ -56,22 +56,22 @@ spec = describe "Example1 (mixed import + func + statements)" $ do
     it "transforms statement in wrapper body" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 6 0) (Position 9 2) sifter
+      transformAndUntransform (Position 6 0) (Position 9 2) sifter
 
     it "transforms declaration" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 0 0) (Position 2 0) sifter
+      transformAndUntransform (Position 0 0) (Position 2 0) sifter
 
     it "transforms function body" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 3 0) (Position 4 0) sifter
+      transformAndUntransform (Position 3 0) (Position 4 0) sifter
 
     it "clamps column when untransforming from indentation area" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      Just pos <- return $ untransformPosition txParams sifter (Position 9 1)
+      Just pos <- return $ untransformPosition sifter (Position 9 1)
       pos `shouldBe` Position 6 0
 
 main :: IO ()
