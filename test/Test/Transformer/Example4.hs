@@ -60,27 +60,27 @@ spec = describe "Example4 (only declarations)" $ do
     it "transforms import" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 0 0) (Position 2 0) sifter
+      transformAndUntransform (Position 0 0) (Position 2 0) sifter
 
     it "transforms type declaration" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 2 0) (Position 3 0) sifter
+      transformAndUntransform (Position 2 0) (Position 3 0) sifter
 
     it "transforms var declaration" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 6 0) (Position 6 0) sifter
+      transformAndUntransform (Position 6 0) (Position 6 0) sifter
 
     it "transforms const declaration" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 8 0) (Position 7 0) sifter
+      transformAndUntransform (Position 8 0) (Position 7 0) sifter
 
     it "transforms func body" $ do
       let inputDoc = listToDoc (T.splitOn "\n" testCode)
       (_, sifter :: DeclarationSifter, _) <- project txParams inputDoc
-      transformAndUntransform txParams (Position 11 0) (Position 9 0) sifter
+      transformAndUntransform (Position 11 0) (Position 9 0) sifter
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec
