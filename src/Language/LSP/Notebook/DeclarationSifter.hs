@@ -38,39 +38,6 @@ data DeclarationSifterParams = DeclarationSifterParams {
 instance Transformer DeclarationSifter where
   type Params DeclarationSifter = DeclarationSifterParams
 
-  getParams _ = DeclarationSifterParams "go-parser" "_notebookExec" ["package main", ""]
-
-  project :: MonadIO m => Params DeclarationSifter -> Doc -> m (Doc, DeclarationSifter, Either Text ())
-  project params doc = do
-    result <- parseGoCode params doc
-    let originalLines = docToList doc
-    let numOrigLines = length originalLines
-    let headerLines = packageHeader params
-    let headerSize = length headerLines
-    case result of
-      Left err -> return (doc, mkIdentitySifter numOrigLines, Left (T.pack err))
-      Right declarations -> do
-        let (siftedIdxs, nonSiftedIdxs) = partitionIndices originalLines declarations
-            siftedLines = map (originalLines !!) siftedIdxs
-            nonSiftedLines = map (originalLines !!) nonSiftedIdxs
-
-        if not (null nonSiftedLines) && any (not . T.null . T.strip) nonSiftedLines
-          then do
-            -- Wrap executable lines in a function
-            let wrappedLines = wrapInFunction (execFunctionName params) nonSiftedLines
-                allLines = headerLines ++ siftedLines ++ wrappedLines
-                numSifted = length siftedIdxs
-                -- Wrapper structure: header, sifted, func header, body lines, closing brace
-                bodyStart = headerSize + numSifted + 1  -- after package header + sifted + function header
-                bodyEnd = headerSize + numSifted + length nonSiftedLines  -- before closing brace
-                sifter = mkSifter headerSize numOrigLines siftedIdxs nonSiftedIdxs (Just (bodyStart, bodyEnd))
-            return (listToDoc allLines, sifter, Right ())
-          else do
-            -- No wrapper needed
-            let allLines = headerLines ++ siftedLines ++ nonSiftedLines
-                sifter = mkSifter headerSize numOrigLines siftedIdxs nonSiftedIdxs Nothing
-            return (listToDoc allLines, sifter, Right ())
-
   transformPosition :: DeclarationSifter -> Position -> Maybe Position
   transformPosition sifter (Position l c)
     | origLine < 0 || origLine >= V.length (forward sifter) = Nothing
@@ -204,3 +171,35 @@ wrapInFunction functionName executableLines =
     functionStart = "func " <> functionName <> "() {"
     functionEnd = "}"
     indentedBody = map (\l -> if T.null l then l else "  " <> l) executableLines
+
+instance MonadIO m => ProjectIn m DeclarationSifter where
+  project :: Params DeclarationSifter -> Doc -> m (Doc, DeclarationSifter, Either Text ())
+  project params doc = do
+    result <- parseGoCode params doc
+    let originalLines = docToList doc
+    let numOrigLines = length originalLines
+    let headerLines = packageHeader params
+    let headerSize = length headerLines
+    case result of
+      Left err -> return (doc, mkIdentitySifter numOrigLines, Left (T.pack err))
+      Right declarations -> do
+        let (siftedIdxs, nonSiftedIdxs) = partitionIndices originalLines declarations
+            siftedLines = map (originalLines !!) siftedIdxs
+            nonSiftedLines = map (originalLines !!) nonSiftedIdxs
+
+        if not (null nonSiftedLines) && any (not . T.null . T.strip) nonSiftedLines
+          then do
+            -- Wrap executable lines in a function
+            let wrappedLines = wrapInFunction (execFunctionName params) nonSiftedLines
+                allLines = headerLines ++ siftedLines ++ wrappedLines
+                numSifted = length siftedIdxs
+                -- Wrapper structure: header, sifted, func header, body lines, closing brace
+                bodyStart = headerSize + numSifted + 1  -- after package header + sifted + function header
+                bodyEnd = headerSize + numSifted + length nonSiftedLines  -- before closing brace
+                sifter = mkSifter headerSize numOrigLines siftedIdxs nonSiftedIdxs (Just (bodyStart, bodyEnd))
+            return (listToDoc allLines, sifter, Right ())
+          else do
+            -- No wrapper needed
+            let allLines = headerLines ++ siftedLines ++ nonSiftedLines
+                sifter = mkSifter headerSize numOrigLines siftedIdxs nonSiftedIdxs Nothing
+            return (listToDoc allLines, sifter, Right ())
