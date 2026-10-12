@@ -39,6 +39,7 @@ library
       FlexibleInstances
       LambdaCase
       ViewPatterns
+      MultiParamTypeClasses
       MultiWayIf
       TupleSections
       NumericUnderscores
@@ -91,6 +92,7 @@ executable go-notebook-language-server
       FlexibleInstances
       LambdaCase
       ViewPatterns
+      MultiParamTypeClasses
       MultiWayIf
       TupleSections
       NumericUnderscores
@@ -146,6 +148,7 @@ test-suite go-notebook-language-server-test
       FlexibleInstances
       LambdaCase
       ViewPatterns
+      MultiParamTypeClasses
       MultiWayIf
       TupleSections
       NumericUnderscores
