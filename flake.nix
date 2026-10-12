@@ -1,11 +1,11 @@
 {
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/master";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/1dde0b46d3daa5bf0ff3ea6332d579a1943b4a0c";
   inputs.gitignore = {
     url = "github:hercules-ci/gitignore.nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/7993f34ee47e28a3d607a525aadc6c94b73be728";
 
   outputs = { self, flake-utils, gitignore, haskellNix, nixpkgs }:
     flake-utils.lib.eachSystem ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"] (system:
