@@ -34,18 +34,21 @@ import UnliftIO.Directory
 import UnliftIO.Exception
 import UnliftIO.Process
 
-import Transform.ClientNot
-import Transform.ClientReq
-import Transform.ClientRsp
-import Transform.ServerNot
-import Transform.ServerReq
-import Transform.ServerRsp
-import Transform.Util
+import Language.LSP.NotebookLanguageServer.Transform.ClientNot
+import Language.LSP.NotebookLanguageServer.Transform.ClientReq
+import Language.LSP.NotebookLanguageServer.Transform.ClientRsp
+import Language.LSP.NotebookLanguageServer.Transform.ServerNot
+import Language.LSP.NotebookLanguageServer.Transform.ServerReq
+import Language.LSP.NotebookLanguageServer.Transform.ServerRsp
+import Language.LSP.NotebookLanguageServer.Transform.Util
 
-import Parsing
-import Process
-import RequestMap
+import Language.LSP.Notebook
+import Language.LSP.NotebookLanguageServer.Parsing
+import Language.LSP.NotebookLanguageServer.Process
+import Language.LSP.NotebookLanguageServer.RequestMap
 import Streams
+import Language.LSP.NotebookLanguageServer.Config
+import Transform.Config
 
 
 data Options = Options {
@@ -131,23 +134,24 @@ main = do
         , _message = T.decodeUtf8 $ fromLogStr msg
         }
 
-  transformerState <- newTransformerState optDidSaveDebouncePeriodMs
+  let config = goNotebookConfig optDidSaveDebouncePeriodMs
+  transformerState <- newTransformerState
 
   flip runLoggingT logFn $ filterLogger logFilterFn $ flip runReaderT transformerState $
     flip finally (logDebugN [i|Tore down loop to read from wrapped stdout|]) $
-    withAsync (readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
+    withAsync (readWrappedOut config clientReqMap serverReqMap wrappedOut sendToStdout) $ \_wrappedOutAsync ->
     flip finally (logDebugN [i|Tore down loop to read from wrapped stderr|]) $
     withAsync (readWrappedErr wrappedErr) $ \_wrappedErrAsync ->
     flip finally (logDebugN [i|Tore down loop to read from stdin|]) $
-    withAsync (stdinLoop wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
+    withAsync (stdinLoop config wrappedIn clientReqMap serverReqMap) $ \_stdinAsync -> do
     waitForProcess p >>= \case
       ExitFailure n -> logErrorN [i|gopls subprocess exited with code #{n}|]
       ExitSuccess -> logInfoN [i|gopls subprocess exited successfully|]
 
 stdinLoop :: forall m. (
-  MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m
-  ) => Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> m ()
-stdinLoop wrappedIn clientReqMap serverReqMap = go freshParse
+  MonadLoggerIO m, MonadReader (TransformerState GoNotebookTransformer) m, MonadUnliftIO m, MonadFail m
+  ) => NotebookConfig GoNotebookTransformer -> Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> m ()
+stdinLoop config wrappedIn clientReqMap serverReqMap = go freshParse
   where
     go parserState = do
       (result, nextState) <- parseOne stdin parserState
@@ -157,13 +161,13 @@ stdinLoop wrappedIn clientReqMap serverReqMap = go freshParse
           logErr [i|Failed to parse message header: #{ctxs}: #{err}|]
           go nextState
         ParseSuccess msg _remainder -> do
-          handleStdinMessage wrappedIn clientReqMap serverReqMap msg
+          handleStdinMessage config wrappedIn clientReqMap serverReqMap msg
           go nextState
 
 handleStdinMessage :: forall m. (
-  MonadLoggerIO m, MonadReader TransformerState m, MonadUnliftIO m, MonadFail m
-  ) => Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> BS.ByteString -> m ()
-handleStdinMessage wrappedIn clientReqMap serverReqMap msg = do
+  MonadLoggerIO m, MonadReader (TransformerState GoNotebookTransformer) m, MonadUnliftIO m, MonadFail m
+  ) => NotebookConfig GoNotebookTransformer -> Handle -> MVar ClientRequestMap -> MVar ServerRequestMap -> BS.ByteString -> m ()
+handleStdinMessage config wrappedIn clientReqMap serverReqMap msg = do
   case A.eitherDecode (BL.fromStrict msg) of
     Left err -> logErr [i|Couldn't decode incoming message: #{err}|]
     Right (x :: A.Value) -> do
@@ -179,9 +183,9 @@ handleStdinMessage wrappedIn clientReqMap serverReqMap msg = do
           modifyMVar_ clientReqMap $ \m' -> case updateClientRequestMap m' msgId (SMethodAndParams meth (msg' ^. Lens.params)) of
             Just m'' -> return m''
             Nothing -> return m'
-          transformClientReq meth msg' >>= liftIO . writeToHandle wrappedIn . A.encode
+          transformClientReq config meth msg' >>= liftIO . writeToHandle wrappedIn . A.encode
         Right (ClientToServerNot meth msg') ->
-          transformClientNot sendExtraNotification meth msg' >>= (liftIO . writeToHandle wrappedIn . A.encode)
+          transformClientNot config sendExtraNotification meth msg' >>= (liftIO . writeToHandle wrappedIn . A.encode)
   where
     sendExtraNotification :: SendExtraNotificationFn m
     sendExtraNotification msg' = do
@@ -189,9 +193,9 @@ handleStdinMessage wrappedIn clientReqMap serverReqMap msg = do
       liftIO $ writeToHandle wrappedIn $ A.encode msg'
 
 readWrappedOut :: (
-  MonadUnliftIO m, MonadLoggerIO m, MonadReader TransformerState m, MonadFail m
-  ) => MVar ClientRequestMap -> MVar ServerRequestMap -> Handle -> (forall a. ToJSON a => a -> m ()) -> m ()
-readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = go (freshParse)
+  MonadUnliftIO m, MonadLoggerIO m, MonadReader (TransformerState GoNotebookTransformer) m, MonadFail m
+  ) => NotebookConfig GoNotebookTransformer -> MVar ClientRequestMap -> MVar ServerRequestMap -> Handle -> (forall a. ToJSON a => a -> m ()) -> m ()
+readWrappedOut config clientReqMap serverReqMap wrappedOut sendToStdout = go (freshParse)
   where
     go parserState = do
       (result, nextState) <- parseOne wrappedOut parserState
@@ -201,13 +205,13 @@ readWrappedOut clientReqMap serverReqMap wrappedOut sendToStdout = go (freshPars
           logErr [i|Failed to parse wrapped output header: #{ctxs}: #{err}|]
           go nextState
         ParseSuccess msg _remainder -> do
-          handleWrappedOutMessage clientReqMap serverReqMap sendToStdout msg
+          handleWrappedOutMessage config clientReqMap serverReqMap sendToStdout msg
           go nextState
 
 handleWrappedOutMessage :: (
-  MonadUnliftIO m, MonadLoggerIO m, MonadReader TransformerState m, MonadFail m
-  ) => MVar ClientRequestMap -> MVar ServerRequestMap -> (forall a. ToJSON a => a -> m ()) -> BS.ByteString -> m ()
-handleWrappedOutMessage clientReqMap serverReqMap sendToStdout msg = do
+  MonadUnliftIO m, MonadLoggerIO m, MonadReader (TransformerState GoNotebookTransformer) m, MonadFail m
+  ) => NotebookConfig GoNotebookTransformer -> MVar ClientRequestMap -> MVar ServerRequestMap -> (forall a. ToJSON a => a -> m ()) -> BS.ByteString -> m ()
+handleWrappedOutMessage config clientReqMap serverReqMap sendToStdout msg = do
   case A.eitherDecode (BL.fromStrict msg) of
     Left err -> logErr [i|Couldn't decode wrapped output: #{err}|]
     Right (x :: A.Value) -> do
@@ -225,7 +229,7 @@ handleWrappedOutMessage clientReqMap serverReqMap sendToStdout msg = do
             Nothing -> return m'
           sendToStdout (transformServerReq meth msg')
         Right (ServerToClientRsp meth initialParams msg') ->
-          transformServerRsp meth initialParams msg' >>= sendToStdout
+          transformServerRsp config meth initialParams msg' >>= sendToStdout
 
 readWrappedErr :: MonadLoggerIO m => Handle -> m ()
 readWrappedErr wrappedErr = forever $ do

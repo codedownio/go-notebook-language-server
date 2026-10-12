@@ -4,7 +4,6 @@ version:             0.1.0.4
 dependencies:
 - base >= 4.7 && < 5
 - lsp-types >= 2.0.0.1
-- monad-logger
 - string-interpolate
 - text
 - unliftio
@@ -34,22 +33,10 @@ library:
   source-dirs: src
   dependencies:
   - aeson
-  - auto-update
   - bytestring
   - containers
-  - filepath
-  - lens
-  - lens-regex-pcre
-  - mtl
-  - myers-diff
-  - network-uri
+  - notebook-language-server-core
   - pcre-light
-  - random
-  - safe
-  - text-rope
-  - time
-  - unliftio-core
-  - uuid
   - vector
 
 executables:
@@ -67,12 +54,12 @@ executables:
     - aeson
     - attoparsec
     - bytestring
-    - lens
-    - mtl
-    - optparse-applicative
-    - process
-    - retry
     - go-notebook-language-server
+    - lens
+    - monad-logger
+    - mtl
+    - notebook-language-server-core
+    - optparse-applicative
     - unix
     - unliftio-core
 
@@ -88,12 +75,11 @@ tests:
     - -O2
     - -W
     dependencies:
-    - QuickCheck
     - containers
-    - go-notebook-language-server
     - directory
     - exceptions
     - filepath
+    - go-notebook-language-server
     - lens
     - lsp-test
     - lsp-test-helpers
@@ -101,6 +87,8 @@ tests:
     - monad-logger
     - mtl
     - myers-diff
+    - notebook-language-server-core
+    - QuickCheck
     - quickcheck-instances
     - sandwich
     - sandwich-contexts
@@ -109,4 +97,3 @@ tests:
     - text-rope
     - unliftio
     - unliftio-core
-    - vector
