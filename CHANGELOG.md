@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# 0.1.1.2
+* Untransform workspace/applyEdit, which named the shadow document and so was refused by the client
+
 # 0.1.1.1
 * Fix textDocument/formatting, which silently did nothing in 0.1.1.0. Formatting edits are now
   passed through untouched, so plain files format and notebooks are left alone.
