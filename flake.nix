@@ -61,6 +61,8 @@
           tar -czvf $out/$name.tar.gz -C to_zip .
         '';
 
+        testExe = flake.packages."go-notebook-language-server:test:go-notebook-language-server-test";
+
       in
         {
           devShells = {
@@ -87,6 +89,19 @@
 
             dynamicWrapped = mkWrapped dynamic;
             staticWrapped = mkWrapped static;
+
+            # The test suite binary, with go-parser on PATH the way the real binary has it.
+            # CI builds this and runs it as an ordinary step rather than as a flake check: the
+            # suite shells out to nix (gopls, print-basic-path, path-info) and to bwrap, none of
+            # which work inside a build sandbox. The server under test is already built by Nix
+            # either way -- see introduceGnls, which getFlake's staticWrapped.
+            tests = pkgs.runCommand "go-notebook-language-server-tests" {
+              nativeBuildInputs = [pkgs.makeWrapper];
+            } ''
+              mkdir -p $out/bin
+              makeWrapper ${testExe}/bin/go-notebook-language-server-test $out/bin/go-notebook-language-server-test \
+                --prefix PATH : ${go-parser}/bin
+            '';
 
             static = flakeStatic.packages."go-notebook-language-server:exe:go-notebook-language-server";
             dynamic = flake.packages."go-notebook-language-server:exe:go-notebook-language-server";
