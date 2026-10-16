@@ -63,20 +63,22 @@
 
         testExe = flake.packages."go-notebook-language-server:test:go-notebook-language-server-test";
 
+        devShellInputs = with pkgs; [
+          stack
+          haskell.compiler.ghc9124
+
+          pcre
+          zlib
+
+          go-parser
+        ];
+
       in
         {
           devShells = {
             default = pkgs.mkShell {
               NIX_PATH = "nixpkgs=${pkgs.path}";
-              buildInputs = with pkgs; [
-                stack
-                haskell.compiler.ghc9124
-
-                pcre
-                zlib
-
-                go-parser
-              ];
+              buildInputs = devShellInputs;
             };
           };
 
@@ -130,6 +132,15 @@
                 (packageForGitHub' "aarch64-darwin" self.packages.aarch64-darwin.dynamic)
               ];
             };
+
+            gcroots = pkgs.writeText "go-notebook-language-server-gc-roots" ''
+              ${pkgs.symlinkJoin {
+                name = "go-notebook-language-server-deps";
+                paths = dynamic.buildInputs ++ dynamic.nativeBuildInputs
+                     ++ static.buildInputs ++ static.nativeBuildInputs
+                     ++ devShellInputs;
+              }}
+            '';
 
             nixpkgsPath = pkgs.writeShellScriptBin "nixpkgsPath.sh" "echo -n ${pkgs.path}";
 
