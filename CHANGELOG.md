@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# 0.1.3.0
+* Transform workspace/symbol answers, which named the shadow document instead of the notebook
+
 # 0.1.2.0
 * Transform textDocument/selectionRange, textDocument/semanticTokens and the goto family, which reached the client in shadow coordinates
 * Transform textDocument/rename, prepareRename, references, signatureHelp and declaration, which reached the server naming the notebook
