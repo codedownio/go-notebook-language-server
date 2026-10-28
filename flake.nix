@@ -30,6 +30,8 @@
         flakeAarch64Linux = (pkgs.pkgsCross.aarch64-multiplatform.hixProject compiler-nix-name).flake {};
         flakeStaticAarch64Linux = (pkgs.pkgsCross.aarch64-multiplatform-musl.hixProject compiler-nix-name).flake {};
 
+        aarch64LinuxExe = flakeAarch64Linux.packages."go-notebook-language-server:exe:go-notebook-language-server";
+
         # Build go-parser from source (stdlib only, no vendorHash needed)
         go-parser = pkgs.buildGoModule {
           pname = "go-parser";
@@ -104,7 +106,7 @@
             dynamic = flake.packages."go-notebook-language-server:exe:go-notebook-language-server";
             darwin = flakeDarwin.packages."go-notebook-language-server:exe:go-notebook-language-server";
             aarch64Linux = let
-              executable = flakeAarch64Linux.packages."go-notebook-language-server:exe:go-notebook-language-server";
+              executable = aarch64LinuxExe;
               libs = pkgs.callPackage ./nix/dynamic-aarch64-closure.nix {
                 inherit executable;
                 executableName = "go-notebook-language-server";
@@ -138,6 +140,7 @@
                 name = "go-notebook-language-server-deps";
                 paths = dynamic.buildInputs ++ dynamic.nativeBuildInputs
                      ++ static.buildInputs ++ static.nativeBuildInputs
+                     ++ aarch64LinuxExe.buildInputs ++ aarch64LinuxExe.nativeBuildInputs
                      ++ devShellInputs;
               }}
             '';
