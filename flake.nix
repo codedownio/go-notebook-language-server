@@ -135,13 +135,16 @@
               ];
             };
 
-            gcroots = pkgs.writeText "go-notebook-language-server-gc-roots" ''
+            gcroots = let
+              inputsOf = d: d.buildInputs ++ d.nativeBuildInputs;
+              # The cross builds can't be made from darwin, where the native build is what matters.
+              hostInputs = if pkgs.stdenv.hostPlatform.isDarwin
+                           then inputsOf dynamic
+                           else inputsOf dynamic ++ inputsOf static ++ inputsOf aarch64LinuxExe;
+            in pkgs.writeText "go-notebook-language-server-gc-roots" ''
               ${pkgs.symlinkJoin {
                 name = "go-notebook-language-server-deps";
-                paths = dynamic.buildInputs ++ dynamic.nativeBuildInputs
-                     ++ static.buildInputs ++ static.nativeBuildInputs
-                     ++ aarch64LinuxExe.buildInputs ++ aarch64LinuxExe.nativeBuildInputs
-                     ++ devShellInputs;
+                paths = pkgs.lib.unique (hostInputs ++ devShellInputs);
               }}
             '';
 

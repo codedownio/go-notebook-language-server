@@ -5,3 +5,4 @@ result
 .direnv
 go-parser/go-parser
 gcroots
+gcroots-*
