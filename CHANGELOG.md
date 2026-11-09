@@ -1,5 +1,8 @@
 # CHANGELOG
 
+# 0.1.7.0
+* Transform textDocument/foldingRange, so a cell's folds land on the notebook's lines
+
 # 0.1.6.0
 * Transform textDocument/diagnostic (pull diagnostic requests)
 * Transform textDocument/documentLink, so a link in a cell points at the notebook rather than the shadow document
